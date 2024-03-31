@@ -1,3 +1,8 @@
+import numpy as np
+
+from infrastructure.utils import convert_listofrollouts
+
+
 class ReplayBuffer(object):
     def __init__(self, max_size=1000000):
         self.max_size = max_size
@@ -13,7 +18,6 @@ class ReplayBuffer(object):
         return self.obs.shape[0] if self.obs else 0
 
     def add_rollouts(self, paths, concat_rew=True):
-
         for path in paths:
             self.paths.append(path)
 
@@ -47,4 +51,13 @@ class ReplayBuffer(object):
             )[-self.max_size:]
 
     def sample_random_data(self, batch_size):
-        pass
+        assert (
+                self.obs.shape[0]
+                == self.acs.shape[0]
+                == self.rews.shape[0]
+                == self.next_obs.shape[0]
+                == self.terminals.shape[0]
+        )
+
+        idxs = np.random.permutation(self.obs.shape[0])[:batch_size]
+        return self.obs[idxs], self.acs[idxs], self.rews[idxs], self.next_obs[idxs], self.terminals[idxs]

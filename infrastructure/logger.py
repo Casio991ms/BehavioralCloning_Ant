@@ -15,7 +15,7 @@ class Logger:
         self._summ_writer.add_scalar('{}'.format(name), scalar, step_)
 
     def log_paths_as_videos(self, paths, step, max_videos_to_save=2, fps=10, video_title='video'):
-        videos = [np.transpose(path['image_obs'][:, 0], [0, 3, 1, 2]) for path in paths]
+        videos = [np.transpose(path['image_obs'], [0, 3, 1, 2]) for path in paths]
 
         max_videos_to_save = np.min([max_videos_to_save, len(videos)])
         max_length = videos[0].shape[0]

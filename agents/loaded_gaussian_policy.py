@@ -1,5 +1,6 @@
 import pickle
 
+import torch
 import torch.nn as nn
 import numpy as np
 
@@ -61,7 +62,6 @@ class LoadedGaussianPolicy(nn.Module):
         self.obs_norm_std = nn.Parameter(ptu.from_numpy(obsnorm_stdev))
         self.hidden_layers = nn.ModuleList()
 
-        # Hidden layers next
         assert list(self.policy_params['hidden'].keys()) == ['FeedforwardNet']
         layer_params = self.policy_params['hidden']['FeedforwardNet']
         for layer_name in sorted(layer_params.keys()):
@@ -69,6 +69,31 @@ class LoadedGaussianPolicy(nn.Module):
             linear_layer = create_linear_layer(W, b)
             self.hidden_layers.append(linear_layer)
 
-        # Output layer
         W, b = read_layer(self.policy_params['out'])
         self.output_layer = create_linear_layer(W, b)
+
+    def forward(self, obs):
+        normed_obs = (obs - self.obs_norm_mean) / (self.obs_norm_std + 1e-6)
+        h = normed_obs
+        for layer in self.hidden_layers:
+            h = layer(h)
+            h = self.non_lin(h)
+        return self.output_layer(h)
+
+    def update(self, obs_no, acs_na, adv_n=None, acs_labels_na=None):
+        raise NotImplementedError("""
+            This policy class simply loads in a particular type of policy and
+            queries it. Do not try to train it.
+        """)
+
+    def get_action(self, obs):
+        if len(obs.shape) > 1:
+            observation = obs
+        else:
+            observation = obs[None, :]
+        observation = ptu.from_numpy(observation.astype(np.float32))
+        action = self(observation)
+        return ptu.to_numpy(action)
+
+    def save(self, filepath):
+        torch.save(self.state_dict(), filepath)

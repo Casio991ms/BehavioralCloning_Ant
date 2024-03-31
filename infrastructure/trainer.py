@@ -8,8 +8,8 @@ import gymnasium as gym
 from infrastructure import utils
 from infrastructure.logger import Logger
 
-MAX_NVIDEO = 2
-MAX_VIDEO_LEN = 40
+MAX_NVIDEO = 1
+MAX_VIDEO_LEN = 100
 
 
 class Trainer(object):
@@ -26,8 +26,6 @@ class Trainer(object):
         np.random.seed(seed)
         torch.manual_seed(seed)
 
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
         if self.params['video_log_freq'] == -1:
             self.params['env_kwargs']['render_mode'] = None
         self.env = gym.make(self.params['env_name'], **self.params['env_kwargs'])
@@ -36,15 +34,10 @@ class Trainer(object):
         self.params['ep_len'] = self.params['ep_len'] or self.env.spec.max_episode_steps
         MAX_VIDEO_LEN = self.params['ep_len']
 
-        ob_dim = self.env.observation_space.shape[0]
-        ac_dim = self.env.action_space.shape[0]
-        self.params['agent_params']['ac_dim'] = ac_dim
-        self.params['agent_params']['ob_dim'] = ob_dim
+        self.params['agent_params']['ob_dim'] = self.env.observation_space.shape[0]
+        self.params['agent_params']['ac_dim'] = self.env.action_space.shape[0]
 
-        if 'model' in dir(self.env):
-            self.fps = 1 / self.env.model.opt.timestep
-        else:
-            self.fps = self.env.env.metadata['render_fps']
+        self.fps = self.env.env.metadata['render_fps']
 
         agent_class = self.params['agent_class']
         self.agent = agent_class(self.env, self.params['agent_params'])
@@ -110,10 +103,13 @@ class Trainer(object):
         if self.log_video:
             print('\nCollecting train rollouts to be used for saving videos...')
             train_video_paths = utils.sample_n_trajectories(self.env, collect_policy, MAX_NVIDEO, MAX_VIDEO_LEN, True)
+            print(f"len(train_video_paths): {len(train_video_paths)}")
+            print(f"train_video_paths[0].keys(): {train_video_paths[0].keys()}")
+            print(f"train_video_paths[0]['image_obs'].shape: {train_video_paths[0]['image_obs'].shape}")
 
         return paths, envsteps_this_batch, train_video_paths
 
-    def train_model(self):
+    def train_agent(self):
         print('\nTraining agent using sampled data from replay buffer...')
         all_logs = []
         for train_step in range(self.params['num_agent_train_steps_per_iter']):
@@ -122,7 +118,6 @@ class Trainer(object):
             train_log = self.agent.train(ob_batch, ac_batch, re_batch, next_ob_batch, terminal_batch)
             all_logs.append(train_log)
         return all_logs
-
 
     def do_relabel_with_expert(self, expert_policy, paths):
         print("\nRelabelling collected observations with labels from an expert policy...")
@@ -183,5 +178,3 @@ class Trainer(object):
             self.logger.flush()
 
 
-    def train_agent(self):
-        pass

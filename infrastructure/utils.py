@@ -6,7 +6,7 @@ MJ_ENV_KWARGS["Ant-v4"]["use_contact_forces"] = True
 
 
 def sample_trajectory(env, policy, max_path_length, render=False):
-    ob = env.reset()
+    ob, _ = env.reset()
 
     obs, acs, rewards, next_obs, terminals, image_obs = [], [], [], [], [], []
     steps = 0
@@ -70,3 +70,15 @@ def Path(obs, image_obs, acs, rewards, next_obs, terminals):
 
 def get_pathlength(path):
     return len(path["reward"])
+
+
+def convert_listofrollouts(paths, concat_rew=True):
+    observations = np.concatenate([path["observation"] for path in paths])
+    actions = np.concatenate([path["action"] for path in paths])
+    if concat_rew:
+        rewards = np.concatenate([path["reward"] for path in paths])
+    else:
+        rewards = [path["reward"] for path in paths]
+    next_observations = np.concatenate([path["next_observation"] for path in paths])
+    terminals = np.concatenate([path["terminal"] for path in paths])
+    return observations, actions, rewards, next_observations, terminals

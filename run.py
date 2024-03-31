@@ -10,19 +10,19 @@ from infrastructure.utils import MJ_ENV_NAMES, MJ_ENV_KWARGS
 class BC_Trainer(object):
     def __init__(self, params):
         agent_params = {
-            'n_layers': params['n_layers'],
-            'size': params['size'],
+            'n_hidden_layers': params['n_hidden_layers'],
+            'hidden_size': params['hidden_size'],
             'learning_rate': params['learning_rate'],
             'max_replay_buffer_size': params['max_replay_buffer_size'],
         }
 
         self.params = params
-        self.params['agent_class'] = BCAgent  # HW1: you will modify this
+        self.params['agent_class'] = BCAgent
         self.params['agent_params'] = agent_params
 
         self.params["env_kwargs"] = MJ_ENV_KWARGS[self.params['env_name']]
 
-        self.trainer = Trainer(self.params)  # HW1: you will modify this
+        self.trainer = Trainer(self.params)
 
         print('Loading expert policy from...', self.params['expert_policy_file'])
         self.loaded_expert_policy = LoadedGaussianPolicy(self.params['expert_policy_file'])
@@ -31,9 +31,9 @@ class BC_Trainer(object):
     def run_training_loop(self):
         self.trainer.run_training_loop(
             n_iter=self.params['n_iter'],
-            initial_expertdata=self.params['expertdata'],
             collect_policy=self.trainer.agent.policy,
             eval_policy=self.trainer.agent.policy,
+            initial_expertdata=self.params['expert_data'],
             expert_policy=self.loaded_expert_policy
         )
 
@@ -60,8 +60,8 @@ def main():
     parser.add_argument('--train_batch_size', type=int,
                         default=100)  # number of sampled data points to be used per gradient/train step
 
-    parser.add_argument('--n_layers', type=int, default=2)  # depth, of policy to be learned
-    parser.add_argument('--size', type=int, default=64)  # width of each layer, of policy to be learned
+    parser.add_argument('--n_hidden_layers', type=int, default=2)  # depth, of policy to be learned
+    parser.add_argument('--hidden_size', type=int, default=64)  # width of each layer, of policy to be learned
     parser.add_argument('--learning_rate', '-lr', type=float, default=5e-3)  # LR for supervised learning
 
     parser.add_argument('--video_log_freq', type=int, default=5)
@@ -73,7 +73,7 @@ def main():
 
     params = vars(args)
 
-    data_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../data')
+    data_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), './data')
     if not (os.path.exists(data_path)):
         os.makedirs(data_path)
     logdir = args.exp_name + '_' + args.env_name + '_' + time.strftime("%d-%m-%Y_%H-%M-%S")

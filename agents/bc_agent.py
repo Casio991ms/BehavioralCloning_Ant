@@ -10,14 +10,13 @@ class BCAgent:
         self.agent_params = agent_params
 
         self.policy = MLPPolicy(
-            self.agent_params['ac_dim'],
             self.agent_params['ob_dim'],
-            self.agent_params['n_layers'],
-            self.agent_params['size'],
+            self.agent_params['n_hidden_layers'],
+            self.agent_params['hidden_size'],
+            self.agent_params['ac_dim'],
             learning_rate=self.agent_params['learning_rate'],
         )
 
-        # replay buffer
         self.replay_buffer = ReplayBuffer(self.agent_params['max_replay_buffer_size'])
 
     def train(self, ob_no, ac_na, re_n, next_ob_no, terminal_n):
