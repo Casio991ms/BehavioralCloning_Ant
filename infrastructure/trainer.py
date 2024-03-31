@@ -43,8 +43,7 @@ class Trainer(object):
         self.agent = agent_class(self.env, self.params['agent_params'])
 
     def run_training_loop(self, n_iter, collect_policy, eval_policy,
-                          initial_expertdata=None, relabel_with_expert=False,
-                          start_relabel_with_expert=1, expert_policy=None):
+                          initial_expertdata=None):
 
         self.total_envsteps = 0
         self.start_time = time.time()
@@ -63,9 +62,6 @@ class Trainer(object):
                 self.params['batch_size']
             )
             self.total_envsteps += envsteps_this_batch
-
-            if relabel_with_expert and itr >= start_relabel_with_expert:
-                paths = self.do_relabel_with_expert(expert_policy, paths)
 
             self.agent.add_to_replay_buffer(paths)
 
@@ -119,11 +115,6 @@ class Trainer(object):
             all_logs.append(train_log)
         return all_logs
 
-    def do_relabel_with_expert(self, expert_policy, paths):
-        print("\nRelabelling collected observations with labels from an expert policy...")
-        for path in paths:
-            path['action'] = expert_policy.get_action(path['observations'])
-        return paths
 
     def perform_logging(self, itr, paths, eval_policy, train_video_paths, training_logs):
         print("\nCollecting data for eval...")
