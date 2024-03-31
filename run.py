@@ -1,7 +1,10 @@
 import os
 import time
 
-from infrastructure.utils import MJ_ENV_NAMES
+from agents.bc_agent import BCAgent
+from agents.loaded_gaussian_policy import LoadedGaussianPolicy
+from infrastructure.trainer import Trainer
+from infrastructure.utils import MJ_ENV_NAMES, MJ_ENV_KWARGS
 
 
 class BC_Trainer(object):
@@ -19,24 +22,29 @@ class BC_Trainer(object):
 
         self.params["env_kwargs"] = MJ_ENV_KWARGS[self.params['env_name']]
 
-        self.rl_trainer = RL_Trainer(self.params)  # HW1: you will modify this
-
-        #######################
-        # LOAD EXPERT POLICY
-        #######################
+        self.trainer = Trainer(self.params)  # HW1: you will modify this
 
         print('Loading expert policy from...', self.params['expert_policy_file'])
         self.loaded_expert_policy = LoadedGaussianPolicy(self.params['expert_policy_file'])
         print('Done restoring expert policy...')
+
+    def run_training_loop(self):
+        self.trainer.run_training_loop(
+            n_iter=self.params['n_iter'],
+            initial_expertdata=self.params['expertdata'],
+            collect_policy=self.trainer.agent.policy,
+            eval_policy=self.trainer.agent.policy,
+            expert_policy=self.loaded_expert_policy
+        )
 
 
 def main():
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('--expert_policy_file', '-epf', type=str,
-                        required=True)  # relative to where you're running this script from
+                        required=True)
     parser.add_argument('--expert_data', '-ed', type=str,
-                        required=True)  # relative to where you're running this script from
+                        required=True)
     parser.add_argument('--env_name', '-env', type=str, help=f'choices: {", ".join(MJ_ENV_NAMES)}', required=True)
     parser.add_argument('--exp_name', '-exp', type=str, default='pick an experiment name', required=True)
     parser.add_argument('--ep_len', type=int)
